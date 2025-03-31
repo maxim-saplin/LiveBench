@@ -66,7 +66,8 @@ def get_models(category, task):
     task_path = os.path.join(BASE_DATA_PATH, category, task, "model_answer")
     if os.path.exists(task_path):
         for file in os.listdir(task_path):
-            if file.endswith(".jsonl"):
+            # Skip files ending with _QUESTIONS.jsonl
+            if file.endswith(".jsonl") and not file.endswith("_QUESTIONS.jsonl"):
                 models.add(file.split(".")[0])
     return sorted(list(models))
 
@@ -112,9 +113,20 @@ def get_model_stats(category, task, model):
         }
     return None
 
-def get_question_text(category, task, question_id):
+def get_question_text(category, task, question_id, model=None):
     """Get the original question text for a given question ID."""
-    # Look for question.jsonl file in the category/task directory
+    # First check for model-specific question file if model is provided
+    if model:
+        model_question_file_path = os.path.join(BASE_DATA_PATH, category, task, "model_answer", f"{model}_QUESTIONS.jsonl")
+        
+        if os.path.exists(model_question_file_path):
+            model_questions = load_jsonl(model_question_file_path)
+            for question in model_questions:
+                if question.get("question_id") == question_id:
+                    # Extract the actual prompt/question text
+                    return question.get("modified_turns", None)
+    
+    # Fall back to original behavior - look for question.jsonl file in the category/task directory
     question_file_path = os.path.join(BASE_DATA_PATH, category, task, "question.jsonl")
     
     if os.path.exists(question_file_path):
@@ -375,7 +387,7 @@ def main():
                             score = judgments.get((question_id, selected_model))
                             
                             # Try to get the original question
-                            question_data = get_question_text(selected_category, selected_task, question_id)
+                            question_data = get_question_text(selected_category, selected_task, question_id, selected_model)
                             
                             # Display results
                             col1, col2 = st.columns([1, 1])
