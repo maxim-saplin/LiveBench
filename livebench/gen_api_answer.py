@@ -67,6 +67,7 @@ def get_answer(
 
     # Generate random elements for this question if randomization is enabled
     random_prefix = ""
+    modified_question = None
     if randomize_prompt:
         # Generate random name with letter-digit-letter-digit pattern
         letters = 'abcdefgh'
@@ -79,6 +80,12 @@ def get_answer(
         
         # Create the randomized greeting
         random_prefix = f"Hello {name}, {datetime_str}\n\n"
+        
+        # Create a deep copy of the question to store the modified version
+        modified_question = dict(question)
+        modified_question["turns"] = list(question["turns"])
+        modified_question["turns"][0] = random_prefix + modified_question["turns"][0]
+        modified_question["random_prefix"] = random_prefix
 
     choices = []
     total_num_tokens = 0
@@ -125,6 +132,22 @@ def get_answer(
     os.makedirs(os.path.dirname(answer_file), exist_ok=True)
     with open(answer_file, "a") as fout:
         fout.write(json.dumps(ans) + "\n")
+    
+    # If randomize_prompt is enabled, save the modified question to a dedicated file
+    if randomize_prompt and modified_question:
+        # Create a path for the questions file based on the answer file
+        questions_file = answer_file.replace(".jsonl", "_QUESTIONS.jsonl")
+        
+        # Save the modified question
+        with open(questions_file, "a") as fout:
+            fout.write(json.dumps({
+                "question_id": question["question_id"],
+                "model_id": model.display_name,
+                "original_turns": question["turns"],
+                "modified_turns": modified_question["turns"],
+                "random_prefix": random_prefix,
+                "tstamp": time.time(),
+            }) + "\n")
 
 
 def run_questions(
@@ -154,6 +177,16 @@ def run_questions(
         force_temperature: Override the temperature setting
         randomize_prompt: Whether to add a randomized header to the prompt
     """
+    if randomize_prompt:
+        questions_file = answer_file.replace(".jsonl", "_QUESTIONS.jsonl")
+        # Initialize the questions file (create or truncate)
+        os.makedirs(os.path.dirname(questions_file), exist_ok=True)
+        
+        # Only initialize if not resuming or retrying failures
+        if not args.resume and not args.retry_failures:
+            with open(questions_file, "w") as f:
+                pass  # Just create an empty file
+
     if parallel == 1:
         for question in tqdm.tqdm(questions):
             get_answer(
