@@ -10,10 +10,16 @@ Use model alias (display name) and change temp:
 export EMPTY_API_KEY=EMPTY && python run_livebench.py --model google_gemma-3-4b-it --model-display-name google_gemma-3-4b-it@temp03 --force-temperature 0.3  --bench-name live_bench --api-base http://localhost:1234/v1 --api-key-name EMPTY_API_KEY
 ```
 
+Randomizing prompts by adding Heloe xyzq, {datetime} to every prompt head:
+
+```
+export EMPTY_API_KEY=EMPTY && python run_livebench.py --model google_gemma-3-4b-it --model-display-name google_gemma-3-4b-it@randomized#2 --randomize-prompt --bench-name live_bench --api-base http://localhost:1234/v1 --api-key-name EMPTY_API_KEY
+```
+
 Show results
 
 ```
-python show_livebench_result.py --bench-name live_bench/instruction_following/summarize --model-list gemma-2-9b-it@iq4_xs                                             
+python show_livebench_result.py --bench-name live_bench                                         
 ```
 
 ## Results

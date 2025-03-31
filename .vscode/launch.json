@@ -25,7 +25,7 @@
             ]
         },
         {
-            "name": "Debug gen_api_answer directly (google_gemma-3-4b-it)",
+            "name": "Debug gen_api_answer directly",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/livebench/gen_api_answer.py",
@@ -42,6 +42,21 @@
                 "--api-base", "http://localhost:1234/v1",
                 "--model-display-name", "google_gemma-3-4b-it@randomized",
                 "--randomize-prompt"
+            ]
+        },
+        {
+            "name": "Debug gen_ground_truth_judgment directly",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/livebench/gen_ground_truth_judgment.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/livebench",
+            "justMyCode": false,
+            "args": [
+                "--model", "google_gemma-3-4b-it",
+                "--question-source", "huggingface",
+                "--bench-name", "live_bench",
+                "--model-display-name", "google_gemma-3-4b-it@randomized#2"
             ]
         }
     ]

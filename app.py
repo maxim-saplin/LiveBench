@@ -66,8 +66,8 @@ def get_models(category, task):
     task_path = os.path.join(BASE_DATA_PATH, category, task, "model_answer")
     if os.path.exists(task_path):
         for file in os.listdir(task_path):
-            # Skip files ending with _QUESTIONS.jsonl
-            if file.endswith(".jsonl") and not file.endswith("_QUESTIONS.jsonl"):
+            # Skip files ending with _QUESTIONS.jsonlx
+            if file.endswith(".jsonl") and not file.endswith("_QUESTIONS.jsonlx"):
                 models.add(file.split(".")[0])
     return sorted(list(models))
 
@@ -117,7 +117,7 @@ def get_question_text(category, task, question_id, model=None):
     """Get the original question text for a given question ID."""
     # First check for model-specific question file if model is provided
     if model:
-        model_question_file_path = os.path.join(BASE_DATA_PATH, category, task, "model_answer", f"{model}_QUESTIONS.jsonl")
+        model_question_file_path = os.path.join(BASE_DATA_PATH, category, task, "model_answer", f"{model}_QUESTIONS.jsonlx")
         
         if os.path.exists(model_question_file_path):
             model_questions = load_jsonl(model_question_file_path)

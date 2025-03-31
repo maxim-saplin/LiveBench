@@ -136,7 +136,7 @@ def get_answer(
     # If randomize_prompt is enabled, save the modified question to a dedicated file
     if randomize_prompt and modified_question:
         # Create a path for the questions file based on the answer file
-        questions_file = answer_file.replace(".jsonl", "_QUESTIONS.jsonl")
+        questions_file = answer_file.replace(".jsonl", "_QUESTIONS.jsonlx") # use jsonlx in order to to confuse with model results
         
         # Save the modified question
         with open(questions_file, "a") as fout:
@@ -178,7 +178,7 @@ def run_questions(
         randomize_prompt: Whether to add a randomized header to the prompt
     """
     if randomize_prompt:
-        questions_file = answer_file.replace(".jsonl", "_QUESTIONS.jsonl")
+        questions_file = answer_file.replace(".jsonl", "_QUESTIONS.jsonlx") # use jsonlx in order to to confuse with model results
         # Initialize the questions file (create or truncate)
         os.makedirs(os.path.dirname(questions_file), exist_ok=True)
         
