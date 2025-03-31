@@ -1,0 +1,28 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+    
+        {
+            "name": "Run LiveBench with Gemma-3-4b",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/livebench/run_livebench.py",
+            "console": "integratedTerminal",
+            "env": {
+                "EMPTY_API_KEY": "EMPTY"
+            },
+            "args": [
+                "--model", "google_gemma-3-4b-it",
+                "--model-display-name", "google_gemma-3-4b-it@randomized",
+                "--randomize-prompt", "true",
+                "--bench-name", "live_bench",
+                "--api-base", "http://localhost:1234/v1",
+                "--api-key-name", "EMPTY_API_KEY"
+            ]
+        }
+    ]
+}

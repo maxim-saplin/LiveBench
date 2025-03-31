@@ -12,6 +12,8 @@ import concurrent.futures
 import glob
 import shortuuid
 import tqdm
+import random
+import datetime
 
 from livebench.common import (
     LIVE_BENCH_RELEASES,
@@ -35,7 +37,8 @@ def get_answer(
     answer_file: str,
     api_dict: dict | None = None,
     stream: bool = False,
-    force_temperature: float | None = None
+    force_temperature: float | None = None,
+    randomize_prompt: bool = False
 ):
     """
     Perform inference for a single question.
@@ -47,6 +50,9 @@ def get_answer(
         max_tokens: The maximum number of tokens for each model response
         answer_file: The path to the file in which to write answers
         api_dict: A dictionary specifying the base API URL and key for model requests
+        stream: Whether to stream the model's response
+        force_temperature: Override the temperature setting
+        randomize_prompt: Whether to add a randomized header to the prompt
     """
     assert (
         force_temperature is not None and "required_temperature" in question.keys()
@@ -59,6 +65,21 @@ def get_answer(
     else:
         temperature = 0
 
+    # Generate random elements for this question if randomization is enabled
+    random_prefix = ""
+    if randomize_prompt:
+        # Generate random name with letter-digit-letter-digit pattern
+        letters = 'abcdefgh'
+        digits = '12345678'
+        name = random.choice(letters) + random.choice(digits) + random.choice(letters) + random.choice(digits)
+        
+        # Get current datetime
+        now = datetime.datetime.now()
+        datetime_str = now.strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Create the randomized greeting
+        random_prefix = f"Hello {name}, {datetime_str}\n\n"
+
     choices = []
     total_num_tokens = 0
     for i in range(num_choices):
@@ -66,7 +87,13 @@ def get_answer(
 
         turns = []
         for j in range(len(question["turns"])):
-            conv.append_message(conv.roles[0], question["turns"][j])
+            prompt_text = question["turns"][j]
+            
+            # Apply randomization only to the first turn
+            if randomize_prompt and j == 0:
+                prompt_text = random_prefix + prompt_text
+            
+            conv.append_message(conv.roles[0], prompt_text)
             conv.append_message(conv.roles[1], None)
 
             if api_dict is not None:
@@ -109,7 +136,8 @@ def run_questions(
     answer_file: str,
     api_dict: dict | None,
     stream: bool,
-    force_temperature: float | None
+    force_temperature: float | None,
+    randomize_prompt: bool = False
 ):
     """
     Perform inference on a list of questions. Output answers to answer_file.
@@ -122,6 +150,9 @@ def run_questions(
         answer_file: The path to the file in which to write answers
         parallel: The number of workers to use to make concurrent API requests
         api_dict: A dictionary specifying the base API URL and key for model requests
+        stream: Whether to stream the model's response
+        force_temperature: Override the temperature setting
+        randomize_prompt: Whether to add a randomized header to the prompt
     """
     if parallel == 1:
         for question in tqdm.tqdm(questions):
@@ -133,7 +164,8 @@ def run_questions(
                 answer_file,
                 api_dict=api_dict,
                 stream=stream,
-                force_temperature=force_temperature
+                force_temperature=force_temperature,
+                randomize_prompt=randomize_prompt
             )
         if len(questions) > 0:
             reorg_answer_file(answer_file)
@@ -151,7 +183,8 @@ def run_questions(
                     answer_file,
                     api_dict=api_dict,
                     stream=stream,
-                    force_temperature=force_temperature
+                    force_temperature=force_temperature,
+                    randomize_prompt=randomize_prompt
                 )
                 futures.append(future)
 
@@ -250,6 +283,12 @@ if __name__ == "__main__":
         default=False,
         help="Stream responses, for models that support streaming"
     )
+    parser.add_argument(
+        "--randomize-prompt",
+        action="store_true",
+        default=False,
+        help="Add a randomized header to each prompt (Hello {name}, {datetime})"
+    )
     args = parser.parse_args()
 
     model = get_model(args.model)
@@ -314,7 +353,8 @@ if __name__ == "__main__":
                     answer_file=answer_file,
                     api_dict=api_dict,
                     stream=args.stream,
-                    force_temperature=args.force_temperature
+                    force_temperature=args.force_temperature,
+                    randomize_prompt=args.randomize_prompt
                 )
 
     elif args.question_source == "jsonl":
@@ -356,7 +396,8 @@ if __name__ == "__main__":
                 answer_file=answer_file,
                 api_dict=api_dict,
                 stream=args.stream,
-                force_temperature=args.force_temperature
+                force_temperature=args.force_temperature,
+                randomize_prompt=args.randomize_prompt
             )
 
     else:

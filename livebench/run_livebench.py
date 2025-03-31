@@ -48,6 +48,7 @@ class LiveBenchParams:
     livebench_release_option: Optional[str] = None
     stream: bool = False
     remove_existing_judgment_file: bool = False
+    randomize_prompt: bool = False
     debug: bool = False
 
     @classmethod
@@ -83,6 +84,7 @@ class LiveBenchParams:
             livebench_release_option=args.livebench_release_option,
             stream=args.stream,
             remove_existing_judgment_file=args.remove_existing_judgment_file,
+            randomize_prompt=args.randomize_prompt,
             debug=args.debug
         )
 
@@ -197,6 +199,7 @@ def build_run_command(
     livebench_release_option: Optional[str] = None,
     stream: bool = False,
     remove_existing_judgment_file: bool = False,
+    randomize_prompt: bool = False,
     debug: bool = False
 ) -> str:
     """Build the command to run gen_api_answer and gen_ground_truth_judgment in sequence"""
@@ -255,6 +258,10 @@ def build_run_command(
     if remove_existing_judgment_file:
         gen_judge_cmd += " --remove-existing-file"
     
+    # Add randomize_prompt flag
+    if randomize_prompt:
+        gen_api_cmd += " --randomize-prompt"
+    
     # Add debug flag only to judgment command
     if debug:
         gen_judge_cmd += " --debug"
@@ -294,6 +301,7 @@ def build_run_command_from_params(params: LiveBenchParams, bench_name: Optional[
         livebench_release_option=params.livebench_release_option,
         stream=params.stream,
         remove_existing_judgment_file=params.remove_existing_judgment_file,
+        randomize_prompt=params.randomize_prompt,
         debug=params.debug
     )
 
@@ -425,6 +433,8 @@ def main():
     parser.add_argument("--stream", action="store_true", help="Enable streaming mode")
     parser.add_argument("--remove-existing-judgment-file", action="store_true", 
                       help="Remove existing judgment file before running")
+    parser.add_argument("--randomize-prompt", action="store_true", 
+                      help="Add a randomized header to each prompt (Hello {name}, {datetime})")
     parser.add_argument("--debug", action="store_true", 
                       help="Enable debug mode for gen_ground_truth_judgment.py (not passed to gen_api_answer.py)")
     
