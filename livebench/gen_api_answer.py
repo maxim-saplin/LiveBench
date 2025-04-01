@@ -14,6 +14,7 @@ import shortuuid
 import tqdm
 import random
 import datetime
+import string
 
 from livebench.common import (
     LIVE_BENCH_RELEASES,
@@ -38,7 +39,8 @@ def get_answer(
     api_dict: dict | None = None,
     stream: bool = False,
     force_temperature: float | None = None,
-    randomize_prompt: bool = False
+    randomize_prompt: bool = False,
+    add_noise: bool = False
 ):
     """
     Perform inference for a single question.
@@ -53,6 +55,7 @@ def get_answer(
         stream: Whether to stream the model's response
         force_temperature: Override the temperature setting
         randomize_prompt: Whether to add a randomized header to the prompt
+        add_noise: Whether to simulate typos by replacing letters with 1% probability
     """
     assert (
         force_temperature is not None and "required_temperature" in question.keys()
@@ -64,43 +67,63 @@ def get_answer(
         temperature = question["required_temperature"]
     else:
         temperature = 0
-
-    # Generate random elements for this question if randomization is enabled
+    
+    # Pre-generate random prefix if needed (outside the loop so it's consistent across choices)
     random_prefix = ""
-    modified_question = None
     if randomize_prompt:
         # Generate random name with letter-digit-letter-digit pattern
         letters = 'abcdefgh'
         digits = '12345678'
         name = random.choice(letters) + random.choice(digits) + random.choice(letters) + random.choice(digits)
-        
-        # Get current datetime
         now = datetime.datetime.now()
         datetime_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        
-        # Create the randomized greeting
         random_prefix = f"Hello {name}, {datetime_str}\n\n"
-        
-        # Create a deep copy of the question to store the modified version
-        modified_question = dict(question)
-        modified_question["turns"] = list(question["turns"])
-        modified_question["turns"][0] = random_prefix + modified_question["turns"][0]
-        modified_question["random_prefix"] = random_prefix
 
     choices = []
     total_num_tokens = 0
     for i in range(num_choices):
         conv = model.adapter.get_default_conv_template(model.api_name)
 
+        # Create a modified_question object to track changes if we're applying any modifications
+        modified_question = None
+        if randomize_prompt or add_noise:
+            modified_question = dict(question)
+            modified_question["turns"] = list(question["turns"])
+
         turns = []
         for j in range(len(question["turns"])):
             prompt_text = question["turns"][j]
+            modified_prompt = prompt_text
+            modifications_applied = False
             
             # Apply randomization only to the first turn
             if randomize_prompt and j == 0:
-                prompt_text = random_prefix + prompt_text
+                modified_prompt = random_prefix + modified_prompt
+                modifications_applied = True
             
-            conv.append_message(conv.roles[0], prompt_text)
+            # Apply noise with 1% probability for each letter
+            if add_noise:
+                noisy_text = ""
+                for char in modified_prompt:
+                    if char.isalpha() and random.random() < 0.01:  # 1% chance to replace a letter with another random letter
+                        if char.isupper():
+                            noisy_text += random.choice(string.ascii_uppercase)
+                        else:
+                            noisy_text += random.choice(string.ascii_lowercase)
+                    else:
+                        noisy_text += char
+                
+                # Only consider it modified if at least one character changed
+                if noisy_text != modified_prompt:
+                    modified_prompt = noisy_text
+                    modifications_applied = True
+            
+            # Store the modified turn for future reference
+            if modified_question is not None and modifications_applied:
+                modified_question["turns"][j] = modified_prompt
+            
+            # Use the modified prompt for the actual API call
+            conv.append_message(conv.roles[0], modified_prompt)
             conv.append_message(conv.roles[1], None)
 
             if api_dict is not None:
@@ -133,21 +156,26 @@ def get_answer(
     with open(answer_file, "a") as fout:
         fout.write(json.dumps(ans) + "\n")
     
-    # If randomize_prompt is enabled, save the modified question to a dedicated file
-    if randomize_prompt and modified_question:
+    # If we applied modifications (randomize_prompt or add_noise), save the modified question
+    if modified_question is not None:
         # Create a path for the questions file based on the answer file
         questions_file = answer_file.replace(".jsonl", "_QUESTIONS.jsonlx") # use jsonlx in order to to confuse with model results
         
+        # Save information about modifications
+        modification_data = {
+            "question_id": question["question_id"],
+            "model_id": model.display_name,
+            "original_turns": question["turns"],
+            "modified_turns": modified_question["turns"],
+            "randomize_prompt_applied": randomize_prompt,
+            "add_noise_applied": add_noise,
+            "random_prefix": random_prefix if randomize_prompt else "",
+            "tstamp": time.time(),
+        }
+        
         # Save the modified question
         with open(questions_file, "a") as fout:
-            fout.write(json.dumps({
-                "question_id": question["question_id"],
-                "model_id": model.display_name,
-                "original_turns": question["turns"],
-                "modified_turns": modified_question["turns"],
-                "random_prefix": random_prefix,
-                "tstamp": time.time(),
-            }) + "\n")
+            fout.write(json.dumps(modification_data) + "\n")
 
 
 def run_questions(
@@ -160,7 +188,8 @@ def run_questions(
     api_dict: dict | None,
     stream: bool,
     force_temperature: float | None,
-    randomize_prompt: bool = False
+    randomize_prompt: bool = False,
+    add_noise: bool = False
 ):
     """
     Perform inference on a list of questions. Output answers to answer_file.
@@ -176,6 +205,7 @@ def run_questions(
         stream: Whether to stream the model's response
         force_temperature: Override the temperature setting
         randomize_prompt: Whether to add a randomized header to the prompt
+        add_noise: Whether to simulate typos by replacing letters with 1% probability
     """
     if randomize_prompt:
         questions_file = answer_file.replace(".jsonl", "_QUESTIONS.jsonlx") # use jsonlx in order to to confuse with model results
@@ -198,7 +228,8 @@ def run_questions(
                 api_dict=api_dict,
                 stream=stream,
                 force_temperature=force_temperature,
-                randomize_prompt=randomize_prompt
+                randomize_prompt=randomize_prompt,
+                add_noise=add_noise
             )
         if len(questions) > 0:
             reorg_answer_file(answer_file)
@@ -217,7 +248,8 @@ def run_questions(
                     api_dict=api_dict,
                     stream=stream,
                     force_temperature=force_temperature,
-                    randomize_prompt=randomize_prompt
+                    randomize_prompt=randomize_prompt,
+                    add_noise=add_noise
                 )
                 futures.append(future)
 
@@ -322,6 +354,12 @@ if __name__ == "__main__":
         default=False,
         help="Add a randomized header to each prompt (Hello {name}, {datetime})"
     )
+    parser.add_argument(
+        "--add-noise",
+        action="store_true",
+        default=False,
+        help="Simulate typos by replacing letters with 1% probability"
+    )
     args = parser.parse_args()
 
     model = get_model(args.model)
@@ -387,7 +425,8 @@ if __name__ == "__main__":
                     api_dict=api_dict,
                     stream=args.stream,
                     force_temperature=args.force_temperature,
-                    randomize_prompt=args.randomize_prompt
+                    randomize_prompt=args.randomize_prompt,
+                    add_noise=args.add_noise
                 )
 
     elif args.question_source == "jsonl":
@@ -430,7 +469,8 @@ if __name__ == "__main__":
                 api_dict=api_dict,
                 stream=args.stream,
                 force_temperature=args.force_temperature,
-                randomize_prompt=args.randomize_prompt
+                randomize_prompt=args.randomize_prompt,
+                add_noise=args.add_noise
             )
 
     else:

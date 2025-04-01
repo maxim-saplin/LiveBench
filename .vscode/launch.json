@@ -56,7 +56,7 @@
                 "--model", "google_gemma-3-4b-it",
                 "--question-source", "huggingface",
                 "--bench-name", "live_bench",
-                "--model-display-name", "google_gemma-3-4b-it@randomized#2"
+                "--model-display-name", "google_gemma-3-4b-it@noise"
             ]
         }
     ]
