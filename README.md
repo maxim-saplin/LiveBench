@@ -236,3 +236,5 @@ Here, we describe our dataset documentation. This information is also available 
   year={2025},
 }
 ```
+
+The fork was detached from the original repo (https://github.com/LiveBench/LiveBench/tree/main) to enable LFS and storing large JSONs.
