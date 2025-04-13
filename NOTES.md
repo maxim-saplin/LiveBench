@@ -29,7 +29,10 @@ Local models via LM Studio 0.3.14, llama.cpp CUDA 1.23.1 and RTX 4090
 
 ```
 category                              average  coding  data_analysis  instruction_following  language  math  reasoning
-model                                                                                                                 
+model        
+mercury-coder-small                      35.9    34.4           44.7                   53.2      12.4  35.1       35.8
+mercury-coder-small@randomized           34.3    32.7           44.9                   54.4      13.4  32.9       27.5
+mercury-coder-small@noise                30.8    30.4           27.8                   51.1      10.5  35.6       29.5                                                                                                         
 google_gemma-3-27b-it@iq4_xs#4           51.1    36.9           53.2                   80.8      32.4  54.1       49.3
 google_gemma-3-27b-it@iq4_xs             50.7    36.9           52.8                   82.1      31.9  53.5       47.3
 google_gemma-3-27b-it@iq4_xs#3           50.7    36.9           52.6                   81.5      32.1  55.1       46.0
