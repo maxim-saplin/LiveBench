@@ -29,7 +29,9 @@ Local models via LM Studio 0.3.14, llama.cpp CUDA 1.23.1 and RTX 4090
 
 ```
 category                              average  coding  data_analysis  instruction_following  language  math  reasoning
-model        
+model
+gpt-4.1-nano-2025-04-14                  42.7    40.6           46.0                   60.0      24.0  46.8       39.1
+gpt-4.1-nano-2025-04-14@noise            36.3    40.8           23.0                   56.5      17.2  43.9       36.3      
 mercury-coder-small                      35.9    34.4           44.7                   53.2      12.4  35.1       35.8
 mercury-coder-small@randomized           34.3    32.7           44.9                   54.4      13.4  32.9       27.5
 mercury-coder-small@noise                30.8    30.4           27.8                   51.1      10.5  35.6       29.5                                                                                                         
